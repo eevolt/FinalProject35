@@ -15,10 +15,7 @@ public class Server extends Thread{
 		}
 	}
 	
-	public synchronized void addToMsgQueue(ChatClient client, String new_message){
-		Socket socket=client.getSocket();
-		String sender= client.getName();
-		new_message= sender+": "+new_message;
+	public synchronized void addToMsgQueue(ChatClient client, String new_message){			
 		messageQueue.add(new_message);
 		notify();
 	}
@@ -29,7 +26,7 @@ public class Server extends Thread{
 		}
 		String message= messageQueue.remove(0);
 		for (int i=0; i<clientList.size(); i++){
-			clientList.get(i).sendMessage(message);
+			clientList.get(i).addMessage(message);
 		}
 	}
 	public void run(){
@@ -55,7 +52,8 @@ public class Server extends Thread{
 			try{
 				Socket socket=serverSocket.accept();
 				ChatClient client= new ChatClient(server, socket);	
-				server.start();
+				ClientListener clientListener= new ClientListener(client);
+				client.run();
 			}catch (IOException ie){
 				ie.printStackTrace();
 			}
