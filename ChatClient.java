@@ -1,95 +1,110 @@
-import java.net.*;
-import java.io.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.ArrayList;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
-public class ChatClient extends Frame implements Runnable {
-	private ArrayList<String> messageQueue = new ArrayList<String>();
-	private PrintWriter pOut;
-	private BufferedReader pIn;
-	private Socket socket;
-	private Server server;
-	private String username;
+public class ChatClient {
 
-	// Change to AA1635-2.mit.edu ip address
-	public static final String SERVER_HOST = "localhost";
-	public static final int SERVER_PORT = 5065;
+	BufferedReader in;
+	PrintWriter out;
+	JFrame frame = new JFrame("Cosmic Owl");
+	JTextField textField = new JTextField(60);
+	JTextArea messageArea = new JTextArea(10, 60);
+	private ArrayList<String> msgQ = new ArrayList<String>();
 
-	public ChatClient(Server server, Socket socket) throws IOException{
-		this.server = server;
-		this.socket = socket;
-		try {
-			pOut = new PrintWriter(new OutputStreamWriter(
-					socket.getOutputStream()));
-			pIn = new BufferedReader(new InputStreamReader(
-					socket.getInputStream()));
-		} catch (IOException ioe) {
-			ioe.printStackTrace();
-		}
+	public ChatClient() {
+		
+		textField.setEditable(false);
+		messageArea.setEditable(false);
+		((JComponent) frame.getContentPane()).setBorder(BorderFactory.createMatteBorder(1, 5, 1, 1,
+				Color.green));
+		frame.getContentPane().add(textField, "Center");
+		frame.getContentPane().add(new JScrollPane(messageArea), "North");
+		frame.pack();
 
+		
+		textField.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {
+				//out.println(textField.getText());
+				
+				addToMsgQ(textField.getText());
+				printFromMsgQ();
+				textField.setText("");
+			}
+		});
 	}
 
-	public synchronized void addMessage(String message) {
-		messageQueue.add(message);
+	public synchronized void addToMsgQ(String s) {
+		msgQ.add(s);
 		notify();
 	}
 
-	public Server getServer(){
-		return server;
-	}
-	public synchronized String getMessage() throws InterruptedException {
-		while (messageQueue.size() == 0) {
-			wait();
-		}
-		String message = messageQueue.remove(0);
-		return message;
-	}
-
-	public void msgToClient(String message) {
-		pOut.println(message);
-		pOut.flush();
-	}
-
-	public Socket getSocket() {
-		return socket;
-	}
-
-	public void run() {
+	public synchronized void printFromMsgQ() {
+		
 		try {
-			while(true){
-			String message = getMessage();
-			msgToClient(message);}
-		} catch (InterruptedException ie) {
-			ie.printStackTrace();
+			while (msgQ.size() == 0) {
+				wait();
+			}
+			while (msgQ.size()>0){
+			System.out.println("msgQ: " + msgQ.get(0));
+			out.println(msgQ.remove(0));}
+		} catch (InterruptedException e) {
 		}
 	}
 
-	public void sendToServer(String message) {
-		server.addToMsgQueue(this, message);
-
+	private String getServerAddress() {
+		return JOptionPane.showInputDialog(frame,
+				"IP of Server:", "Welcome to the Nightosphere",
+				JOptionPane.QUESTION_MESSAGE);
 	}
 
-	public static void main(String[] args) {
-		BufferedReader in = null;
-		PrintWriter out = null;
-		try {
-			Socket serverSocket = new Socket(SERVER_HOST, SERVER_PORT);
-			in = new BufferedReader(new InputStreamReader(
-					serverSocket.getInputStream()));
-			out = new PrintWriter(new OutputStreamWriter(
-					serverSocket.getOutputStream()));
-			System.out.println("Connected to server " + SERVER_HOST + ":"
-					+ SERVER_PORT);
-		} catch (IOException ioe) {
-			System.err.println("Couldn't connect to " + SERVER_HOST + ":"
-					+ SERVER_PORT);
-			System.exit(-1);
+	
+	private String getName() {
+		return JOptionPane.showInputDialog(frame, "Pick your screen name:",
+				"Screen name", JOptionPane.PLAIN_MESSAGE);
+	}
+
+	
+	private void run() throws IOException {
+
+		
+		String serverAddress = getServerAddress();
+		Socket socket = new Socket(serverAddress, 9016);
+		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		out = new PrintWriter(socket.getOutputStream(), true);
+
+		
+		while (true) {
+			String line = in.readLine();
+			if (line!=null){
+			if (line.startsWith("USERNAME")) {
+				out.println(getName());
+			} else if (line.startsWith("SOUNDSGOOD")) {
+				textField.setEditable(true);
+			} else if (line.startsWith("MESSAGE")){
+				messageArea.append(line.substring(8) + "\n");
+			}}
 		}
-		ClientWindow cw = new ClientWindow(in, out);
-
 	}
 
+	public static void main(String[] args) throws Exception {
+		ChatClient client = new ChatClient();
+		client.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		client.frame.setVisible(true);
+		client.run();
+	}
 }
