@@ -76,6 +76,7 @@ public class ChatClient {
 		textField.setEditable(false);
 		messageArea.setEditable(false);
 		messageArea.setPreferredSize(new Dimension(290,300));
+		messageArea.setForeground(Color.GREEN);
 		messageArea.setText("Welcome To The Nightosphere \n");
 		StyleConstants.setForeground(messageText, Color.green);
 		StyleConstants.setBackground(messageText, Color.black);
@@ -84,6 +85,9 @@ public class ChatClient {
 				.createMatteBorder(5, 5, 5, 5, Color.green));
 		GridBagConstraints constraints = new GridBagConstraints();
 		JPanel chatPanel = new JPanel(new GridBagLayout());
+		messageArea.setOpaque(true);
+		messageArea.setBackground(Color.BLACK);
+		
 		//add the scrollpane
 		constraints.weightx = 1;
 		constraints.weighty = 1;
@@ -153,7 +157,7 @@ public class ChatClient {
 	private void run() throws IOException {
 
 		String serverAddress = getServerIP();
-		Socket socket = new Socket(serverAddress, 9024);
+		Socket socket = new Socket(serverAddress,5444);
 		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		out = new PrintWriter(socket.getOutputStream(), true);
 		String user = "";
