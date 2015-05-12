@@ -36,9 +36,9 @@ class ServerHandler extends Thread {
 		}
 		while (messageQueue.size() > 0) {
 			String message = messageQueue.remove(0);
-			System.out.println("Sever msgQ: " + message);
+			//System.out.println("Sever msgQ: " + message);
 			for (PrintWriter toClient : serverOut) {
-				toClient.println("MESSAGE " + username + ": " + message);
+				toClient.println(message);
 			}
 		}
 	}
@@ -66,15 +66,20 @@ class ServerHandler extends Thread {
 			sOut = new PrintWriter(socket.getOutputStream(), true);
 			setUsername();
 
-			sOut.println("SOUNDSGOOD");
+			sOut.println("SOUNDSGOOD ");			
 			serverOut.add(sOut);
-
+			addToMsgQueue("NEWUSER "+username+" has entered the chat room");
+			try{
+				sendMessage();				
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			while (true) {
 				String msg = sIn.readLine();
 				if (msg == null) {
 					return;
 				}
-				addToMsgQueue(msg);
+				addToMsgQueue("MESSAGE "+username+": "+msg);
 				try {
 					sendMessage();
 				} catch (InterruptedException e) {
