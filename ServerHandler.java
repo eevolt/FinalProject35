@@ -15,23 +15,25 @@ class ServerHandler extends Thread {
 	private ArrayList<PrintWriter> serverOut;
 	private ArrayList<String> usernames;
 	private boolean hasUsername = false;
+	private ChatServer chatServer;
 
 	public ServerHandler(Socket socket, ArrayList<PrintWriter> writers,
-			ArrayList<String> names) {
+			ArrayList<String> names, ChatServer chatServer) {
 		this.socket = socket;
 		this.serverOut = writers;
 		this.usernames = names;
+		this.chatServer=chatServer;
 	}
 
 	public synchronized void addToMsgQueue(String new_message) {
 		messageQueue.add(new_message);
-		System.out.println("message added to server message queue");
+		//System.out.println("message added to server message queue");
 		notify();
 	}
 
 	public synchronized void sendMessage() throws InterruptedException {
 		while (messageQueue.size() == 0) {
-			System.out.println("waiting on sending message...");
+			//System.out.println("waiting on sending message...");
 			wait();
 		}
 		while (messageQueue.size() > 0) {
@@ -66,8 +68,11 @@ class ServerHandler extends Thread {
 			sOut = new PrintWriter(socket.getOutputStream(), true);
 			setUsername();
 
-			sOut.println("SOUNDSGOOD ");			
-			serverOut.add(sOut);
+			sOut.println("SOUNDSGOOD ");
+			synchronized(serverOut){
+				serverOut.add(sOut);
+			}
+			
 			addToMsgQueue("NEWUSER "+username+" has entered the Nightosphere");
 			try{
 				sendMessage();				
@@ -93,13 +98,15 @@ class ServerHandler extends Thread {
 			synchronized(usernames){
 				if (username != null) {
 					usernames.remove(username);}
-				if (usernames.size()==0){
-					System.out.println("New # users: "+usernames.size());
-					ChatServer.hasClients=false;
+				if (usernames.size()==0){					
+					chatServer.stopServer();
 			}}
-			if (sOut != null) {
-				serverOut.remove(sOut);
+			synchronized(serverOut){
+				if (sOut != null) {
+					serverOut.remove(sOut);
+				}
 			}
+			
 			try {
 				addToMsgQueue("MESSAGE "+username+" has left the Nightosphere");
 				try {
