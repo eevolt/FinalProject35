@@ -68,7 +68,7 @@ class ServerHandler extends Thread {
 
 			sOut.println("SOUNDSGOOD ");			
 			serverOut.add(sOut);
-			addToMsgQueue("NEWUSER "+username+" has entered the chat room");
+			addToMsgQueue("NEWUSER "+username+" has entered the Nightosphere");
 			try{
 				sendMessage();				
 			} catch (InterruptedException e) {
@@ -90,14 +90,29 @@ class ServerHandler extends Thread {
 		} catch (IOException e) {
 			System.out.println(e);
 		} finally {
-
-			if (username != null) {
-				usernames.remove(username);
-			}
+			synchronized(usernames){
+				if (username != null) {
+					usernames.remove(username);}
+				if (usernames.size()==0){
+					System.out.println("New # users: "+usernames.size());
+					ChatServer.hasClients=false;
+			}}
 			if (sOut != null) {
 				serverOut.remove(sOut);
 			}
 			try {
+				addToMsgQueue("MESSAGE "+username+" has left the Nightosphere");
+				try {
+					sendMessage();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				try {
+					this.join();
+					System.out.println("joined ServerHandler");
+				} catch (InterruptedException e) {					
+					e.printStackTrace();
+				}
 				socket.close();
 			} catch (IOException e) {
 			}

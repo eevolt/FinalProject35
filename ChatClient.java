@@ -157,7 +157,7 @@ public class ChatClient {
 	private void run() throws IOException {
 
 		String serverAddress = getServerIP();
-		Socket socket = new Socket(serverAddress,5448);
+		Socket socket = new Socket(serverAddress,5449);
 		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		out = new PrintWriter(socket.getOutputStream(), true);
 		String user = "";
