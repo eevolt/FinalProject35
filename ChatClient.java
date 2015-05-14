@@ -56,10 +56,10 @@ public class ChatClient {
 			add("Marshall Lee");
 		}
 	};
-
+	private static int SERVER_PORT=5451;
 	JFrame frame = null;
-	BufferedReader in;
-	PrintWriter out;
+	BufferedReader clientIn;
+	PrintWriter clientOut;
 
 	JTextField textField = new JTextField(60);
 	JTextPane messageArea = new JTextPane();
@@ -67,7 +67,8 @@ public class ChatClient {
 	StyledDocument doc = messageArea.getStyledDocument();
 	SimpleAttributeSet messageText = new SimpleAttributeSet();
 	JScrollPane scrollPane= new JScrollPane(messageArea);
-	ArrayList<String> msgQ = new ArrayList<String>();
+	ArrayList<String> outputMsgQ = new ArrayList<String>();
+	ArrayList<String> inputMsgQ = new ArrayList<String>();
 
 	public ChatClient() {
 		Random rand = new Random();
@@ -108,30 +109,63 @@ public class ChatClient {
 			public void actionPerformed(ActionEvent e) {
 				// out.println(textField.getText());
 
-				addToMsgQ(textField.getText());
-				printFromMsgQ();
+				addToOutputMsgQ(textField.getText());
+				printFromOutputMsgQ();
 				textField.setText("");
 			}
 		});
 	}
 
-	public synchronized void addToMsgQ(String s) {
-		msgQ.add(s);
+	public synchronized void addToOutputMsgQ(String s) {
+		outputMsgQ.add(s);
 		notify();
 	}
 
-	public synchronized void printFromMsgQ() {
+	public synchronized void printFromOutputMsgQ() {
 
 		try {
-			while (msgQ.size() == 0) {
+			while (outputMsgQ.size() == 0) {
 				wait();
 			}
-			while (msgQ.size() > 0) {
-				System.out.println("msgQ: " + msgQ.get(0));
-				out.println(msgQ.remove(0));
+			while (outputMsgQ.size() > 0) {
+				System.out.println("msgQ: " + outputMsgQ.get(0));
+				clientOut.println(outputMsgQ.remove(0));
 				scrollPane.getVerticalScrollBar().setValue(scrollPane.getVerticalScrollBar().getMaximum());
 			}
 		} catch (InterruptedException e) {
+		}
+	}
+	public synchronized void addToInputMsgQ(String s){
+		inputMsgQ.add(s);
+		notify();
+	}
+	public synchronized void displayFromInputMsgQ(){
+		try{
+			while(inputMsgQ.size()==0){
+				wait();
+			}
+			while(inputMsgQ.size()>0){
+				String input=inputMsgQ.remove(0);
+				if (input.startsWith("USERNAME")) {
+					String user = getUserName();
+					clientOut.println(user);
+				} else if (input.startsWith("SOUNDSGOOD")) {
+					textField.setEditable(true);
+				} else if (input.startsWith("MESSAGE")) {
+					DateFormat dateFormat = new SimpleDateFormat(
+							"yyyy/MM/dd HH:mm:ss");
+					Date date = new Date();
+					append(dateFormat.format(date) + "  " + input.substring(8)
+							+ "\n");
+				} else if (input.startsWith("NEWUSER")) {
+					DateFormat dateFormat = new SimpleDateFormat(
+							"yyyy/MM/dd HH:mm:ss");
+					Date date = new Date();
+					append(dateFormat.format(date) + "  " + input.substring(8)
+							+ "\n");
+				}
+			}
+		}catch (InterruptedException e) {
 		}
 	}
 
@@ -157,32 +191,16 @@ public class ChatClient {
 	private void run() throws IOException {
 
 		String serverAddress = getServerIP();
-		Socket socket = new Socket(serverAddress,5451);
-		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		out = new PrintWriter(socket.getOutputStream(), true);
+		Socket socket = new Socket(serverAddress,SERVER_PORT);
+		clientIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		clientOut = new PrintWriter(socket.getOutputStream(), true);
 		String user = "";
 
 		while (true) {
-			String input = in.readLine();
+			String input = clientIn.readLine();
 			if (input != null) {
-				if (input.startsWith("USERNAME")) {
-					user = getUserName();
-					out.println(user);
-				} else if (input.startsWith("SOUNDSGOOD")) {
-					textField.setEditable(true);
-				} else if (input.startsWith("MESSAGE")) {
-					DateFormat dateFormat = new SimpleDateFormat(
-							"yyyy/MM/dd HH:mm:ss");
-					Date date = new Date();
-					append(dateFormat.format(date) + "  " + input.substring(8)
-							+ "\n");
-				} else if (input.startsWith("NEWUSER")) {
-					DateFormat dateFormat = new SimpleDateFormat(
-							"yyyy/MM/dd HH:mm:ss");
-					Date date = new Date();
-					append(dateFormat.format(date) + "  " + input.substring(8)
-							+ "\n");
-				}
+				addToInputMsgQ(input);
+				displayFromInputMsgQ();
 			}
 		}
 	}
