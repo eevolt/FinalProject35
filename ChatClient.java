@@ -115,7 +115,25 @@ public class ChatClient {
 			}
 		});
 	}
-
+	
+	public void testInitialize(Socket socket) throws IOException{
+		clientIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		clientOut = new PrintWriter(System.out, true);
+	}
+	public BufferedReader getIOIn(){
+		return clientIn;
+	}
+	public PrintWriter getIOout(){
+		return clientOut;
+	}
+	public ArrayList<String> getOutMsgQ(){
+		return outputMsgQ;
+	}
+	public ArrayList<String> getInMsgQ(){
+		return inputMsgQ;
+	}
+	
+	
 	public synchronized void addToOutputMsgQ(String s) {
 		outputMsgQ.add(s);
 		notify();
@@ -128,7 +146,6 @@ public class ChatClient {
 				wait();
 			}
 			while (outputMsgQ.size() > 0) {
-				System.out.println("msgQ: " + outputMsgQ.get(0));
 				clientOut.println(outputMsgQ.remove(0));
 				scrollPane.getVerticalScrollBar().setValue(scrollPane.getVerticalScrollBar().getMaximum());
 			}

@@ -25,6 +25,29 @@ class ServerHandler extends Thread {
 		this.chatServer=chatServer;
 	}
 
+	public Socket getSocket(){
+		return socket;
+	}
+	public ArrayList<PrintWriter> getIOStreams(){
+		return serverOut;
+	}
+	public ArrayList<String> getUsernames(){
+		return usernames;
+	}
+	public ChatServer getServerInstance(){
+		return chatServer;
+	}
+	public ArrayList<String> getMsgQ(){
+		return messageQueue;
+	}
+	
+	public void toTest() throws IOException{
+		sIn = new BufferedReader(new InputStreamReader(
+				socket.getInputStream()));
+		sOut = new PrintWriter(socket.getOutputStream(), true);
+		serverOut.add(sOut);
+	}
+	
 	public synchronized void addToMsgQueue(String new_message) {
 		messageQueue.add(new_message);
 		//System.out.println("message added to server message queue");
@@ -90,7 +113,6 @@ class ServerHandler extends Thread {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-
 			}
 		} catch (IOException e) {
 			System.out.println(e);
